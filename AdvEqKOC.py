@@ -35,10 +35,11 @@ for n in range(nt):
     phi[j] = phiOld[j] - u*dt*(phiOld[j] - phiOld[j - 1])/dx
   phi[0]=phi[-1]  
   phiOld = phi.copy()
-  plt.cla()
-  plt.plot(x,analytic(x,n*dt),'r',label='analytic')
-  plt.plot(x, phi, 'b', label = 'Time ' + str(n*dt))
-  plt.legend(loc = 'best')
-  plt.ylabel('$\phi$')
-  plt.ylim([0,1])
-  plt.pause(0.05)
+  if int(n)%(nt/10)==0: 
+    plt.cla()
+    plt.plot(x,analytic(x,n*dt),'r',label='analytic')
+    plt.plot(x, phi, 'b', label = 'Time ' + str(n*dt))
+    plt.legend(loc = 'best')
+    plt.ylabel('$\phi$')
+    plt.ylim([0,1])
+    plt.pause(0.05)
