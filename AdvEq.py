@@ -11,13 +11,25 @@ import matplotlib.pyplot as plt
 import advschemes
 
 def main():
-    "Solves the advection equation"
+    """"
+    Solves the advection equation using three finite difference numerical methods
+    """
     w=advschemes.whiz()
     
     #calling the schemes
     w.ftbs()
     w.ftcs()
     w.ctcs()
+
+def main_sw():
+    """
+    Same as main, but with a squarewave as initial condition, so to see the effect of discontinuities
+
+    """
+    w=advschemes.whiz(squarewave=True)
+    w.ftbs()
+    w.ftcs()
+    w.ctcs()    
     
     
     "Check on stability."
@@ -26,5 +38,5 @@ def main():
     "FTCS is unconditionally unstable."
 
 
-main()
+main_sw()
                 
