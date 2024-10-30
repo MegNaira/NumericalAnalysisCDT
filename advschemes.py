@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 class whiz:
     
-    def __init__(self, u=1.0, nx=50, nt=250, x=None):
+    def __init__(self, u=1.0, nx=100, nt=500, x=None, plot=True, squarewave=False):
         #Parameters
         self.u = u
         self.nx = nx
@@ -24,6 +24,7 @@ class whiz:
         
         self.x = np.linspace(0.0, 1.0, self.nx+1)
         
+        self.sw=squarewave
         
         self.phi=self.analytic(0)
         self.phiOld=self.phi.copy()
@@ -31,7 +32,10 @@ class whiz:
         
     #the analytical solution to the advection equation, used for comparison and for setting initial conditions
     def analytic(self,t):
-        return np.where((self.x-self.u*t)%1. < 0.5, np.power(np.sin(2*np.pi*(self.x-self.u*t)),2), 0.)
+        if (self.sw):
+            return np.where((self.x-self.u*t)%1. < 0.5, 1, 0.)
+        else:
+            return np.where((self.x-self.u*t)%1. < 0.5, np.power(np.sin(2*np.pi*(self.x-self.u*t)),2), 0.)
     
     
     #function to plot interesting time steps
@@ -49,8 +53,8 @@ class whiz:
         ax.tick_params(axis='y', which='minor', labelsize=0, width=2, length=3)
         ax.set_ylabel('$\phi$', fontsize=20)
         ax.set_title(scheme + ', c=%.1f'%(self.c), fontsize=22)
-        ax.set_ylim([0,1])
-        fig.savefig(scheme + "_step%i.jpg"%n)
+        ax.set_ylim([-0.1,1.1])
+        fig.savefig(scheme + "_step%i_sqwave"%n + str(self.sw) + ".jpg")
         plt.show()
         plt.pause(0.05)
     
@@ -87,7 +91,7 @@ class whiz:
     
     #CTCS - computes the numerical solution and calls the plotting function
     def ctcs(self):
-        scheme='FTCS'
+        scheme='CTCS'
         self.phiOld=self.analytic(self.dt)
         
         for n in range(2,self.nt):
