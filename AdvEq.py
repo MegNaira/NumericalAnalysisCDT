@@ -8,28 +8,16 @@ Created on Thu Oct 17 16:19:11 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
-from advschemes import analytic, ftbs, ftcs, ctcs
+import advschemes
 
 def main():
-    "Solve the advection equation"
-    #Parameters
-    u = 1.0
-    nx = 50
-    nt = 250
-    
-    #Other derived parameters
-    dx = 1./nx # The spacial resolution
-    dt = 1./nt # The time step
-    c = u*dt/dx
-    print('Courant number =', c)
-
-    #space points
-    x = np.linspace(0.0, 1.0, nx + 1)
+    "Solves the advection equation"
+    w=advschemes.whiz()
     
     #calling the schemes
-    phi_FTBS = ftbs(u,x,nx,nt,dx,dt)
-    phi_FTCS = ftcs(u,x,nx,nt,dx,dt)
-    phi_CTCS = ctcs(u,x,nx,nt,dx,dt)
+    w.ftbs()
+    w.ftcs()
+    w.ctcs()
     
     
     "Check on stability."
