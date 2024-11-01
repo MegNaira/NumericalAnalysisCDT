@@ -8,7 +8,9 @@ Created on Thu Oct 17 16:19:11 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.optimize as opt
 import advschemes
+
 
 def main():
     """"
@@ -18,7 +20,7 @@ def main():
     w=advschemes.whiz()
     
     schemes = {
-        #"FTBS" : w.ftbs,
+        "FTBS" : w.ftbs,
         #"FTCS" : w.ftcs,
         "CTCS" : w.ctcs
         }
@@ -51,53 +53,72 @@ def main_sw():
     "CTCS is stable and not damping for 0<=c<=1. It is second order accurate."
     "FTCS is unconditionally unstable."
 
+def retta(x,m,q):
+    return m*x+q
+
 def accuracy():
-    s=[1.0,2.0] #when it's equal to 2, it means that I double the resolution and halve the timestep while keeping nt constant
-    nx=[50,150]
-    nt=[250,750]
     
-    err_ftbs=[]
-    err_ctcs=[]
-    dx=[]
+    nx=np.array([30,40,50,60,70,80])
+    nt=nx/0.4
     
-
+    err_ftbs=np.zeros(len(nx))
+    err_ctcs=np.zeros(len(nx))   
     
-    for i in range(len(s)):
-        y=advschemes.whiz(nx=nx[0], nt=nt[0], s=s[i], plot=False)
+    for i in range(len(nx)):
         
-        dx.append(y.dx)
-    
-        res_ftbs=y.ftbs()
-        res_ctcs=y.ctcs()
-            
-        err_ftbs.append(y.rmse(res_ftbs,y.analytic(y.nt*y.dt)))
-        err_ctcs.append(y.rmse(res_ctcs,y.analytic(y.nt*y.dt)))
+        y=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False)
 
+        res_ftbs=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).ftbs()
+        res_ctcs=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).ctcs()
+        
+        exp=y.analytic(y.nt*y.dt)
+    
+        #err_ftbs[i]=y.rmse(res_ftbs,exp)
+        #err_ctcs[i]=y.rmse(res_ctcs,exp)
+        
+        err_ftbs[i]=y.ltwo(res_ftbs,exp,1/nx[i])
+        err_ctcs[i]=y.ltwo(res_ctcs,exp,1/nx[i])
+            
+        #err_ftbs[i]=np.sqrt(np.sum((res_ftbs-exp)**2/nx[i])/np.sum((exp/nx[i])**2))
+        #err_ctcs[i]=np.sqrt(np.sum((res_ctcs-exp)**2/nx[i])/np.sum((exp/nx[i])**2))
+    
+    #[m_ftbs,q_ftbs]= np.polyfit(np.log10(1/nx), np.log10(err_ftbs),1)
+    #[m_ctcs,q_ctcs]= np.polyfit(np.log10(1/nx), np.log10(err_ctcs),1)
+    
+    [m_ftbs,q_ftbs], pcov_ftbs = opt.curve_fit(retta,np.log10(1/nx), np.log10(err_ftbs))
+    [m_ctcs,q_ctcs], pcov_ctcs = opt.curve_fit(retta,np.log10(1/nx), np.log10(err_ctcs))
+        
+    print(m_ftbs,m_ctcs)
+    
     fig, ax = plt.subplots(1,1,figsize=(12,10))
     ax.cla()
-    ax.scatter(dx, err_ftbs, color='#802392', s=100, label='FTBS')
-    ax.scatter(dx, err_ctcs, color='#A5F8D3', s=100, label = 'CTCS')
-    ax.legend(loc = 'upper right', fontsize=14)
-    #ax.text(0.88,0.78,'t=%.2f'%((n+1)*self.dt), fontsize=16)
-    ax.set_xlabel('dx', fontsize=20)
-    ax.set_ylabel('RMSE', fontsize=20)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
+    ax.scatter(np.log10(1/nx), np.log10(err_ftbs), color='#B80053', s=100, label='FTBS')
+    ax.scatter(np.log10(1/nx), np.log10(err_ctcs), color='#345995', s=100, label = 'CTCS')
+    ax.plot(np.log10(1/nx),m_ftbs*np.log10(1/nx)+q_ftbs, color='#B80053')
+    ax.plot(np.log10(1/nx),m_ctcs*np.log10(1/nx)+q_ctcs, color='#345995')
+    ax.legend(loc = 'lower right', fontsize=20)
+    ax.text(-1.55,-1.4,'n=%.2f'%m_ftbs, color='#B80053', fontsize=16, rotation=10)
+    ax.text(-1.55,-1.95,'n=%.2f'%m_ctcs, color='#345995', fontsize=16, rotation=30)
+    ax.set_xlabel('log(dx)', fontsize=20)
+    ax.set_ylabel('log(L2 norm)', fontsize=20)
+    #ax.set_xscale('log')
+    #ax.set_yscale('log')
     
     ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
     ax.tick_params(axis='x', which='minor', labelsize=0, width=2, length=5)
     ax.tick_params(axis='y', which='major', labelsize=18, width=3, length=7)
     ax.tick_params(axis='y', which='minor', labelsize=0, width=2, length=3)
 
-    ax.set_title('Order of convergence, nt=%i'%(y.nt), fontsize=22)
+    ax.set_title('Order of convergence, c=%.1f'%(y.c), fontsize=22)
     #ax.set_ylim([-0.1,1.1])
     
     plt.grid()
         
-    fig.savefig("Convergence_nt%i.jpg"%y.nt)
+    fig.savefig("ConvergenceL2_c%.1f.jpg"%y.c)
     plt.show()
     
         
     
-main()
+#main()
+accuracy()
                 
