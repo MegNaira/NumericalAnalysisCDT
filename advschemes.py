@@ -11,18 +11,17 @@ import matplotlib.pyplot as plt
 
 class whiz:
     
-    def __init__(self, u=1.0, nx=40, nt=200, s=1.0, x=None, plot=True, squarewave=False):
+    def __init__(self, u=1.0, nx=50, nt=50/0.4, x=None, plot=True, squarewave=False):
+        
         #Parameters
         self.u = u
-        self.nx = nx
-        self.nt = nt 
+        self.nx = int(nx)
+        self.nt = int(nt)
         
-        #Scaling among dx and dt
-        self.s = s
         
         #Other derived parameters
-        self.dx = (1./self.nx)/self.s
-        self.dt = (1./self.nt)*self.s
+        self.dx = (1./self.nx)
+        self.dt = (1./self.nt)
         self.c = self.dt*self.u/self.dx
         
         self.x = np.linspace(0.0, 1.0, self.nx+1)
@@ -40,7 +39,7 @@ class whiz:
         if (self.sw):
             return np.where((self.x-self.u*t)%1. < 0.5, 1, 0.)
         else:
-            return np.where((self.x-self.u*t)%1. < 0.5, np.power(np.sin(2*np.pi*(self.x-self.u*t)),2), 0.)
+            return np.power(np.sin(2*np.pi*(self.x-self.u*t)),2)
     
     
     #function to plot interesting time steps
@@ -75,10 +74,12 @@ class whiz:
             self.phiOld = self.phi.copy()
             
             #selecting and plotting 10 timesteps
-            y=self.nt/10
+            y=self.nt/5
             if n%y==0:
                 self.plot_timestep(n,scheme)
                 
+        t=(n+1)*self.dt       
+        #print("t_ftbs=", t)         
         return self.phi
                 
     #FTCS - computes the numerical solution and calls the plotting function
@@ -105,7 +106,7 @@ class whiz:
         self.phiOld=self.analytic(self.dt)
         
         for n in range(1,self.nt):
-            for j in range(1,self.nx-1):
+            for j in range(1,self.nx):
                 self.phi[j] = self.phiOlder[j] - self.c*(self.phiOld[j+1] - self.phiOld[j-1])
             self.phi[0]=self.phiOlder[0]-self.c*(self.phiOld[1]-self.phiOld[-2])   
             self.phi[-1]=self.phi[0] 
@@ -113,13 +114,18 @@ class whiz:
             self.phiOld = self.phi.copy()
             
             #selecting and plotting 10 timesteps
-            y=self.nt/10
+            y=self.nt/5
             if n%y==0:
                 self.plot_timestep(n,scheme)
                 
+        t=(n+1)*self.dt       
+        #print("t_ctcs", t)        
         return self.phi
     
     #Root mean square error, used for convergence analysis
     def rmse(self,res,exp):
         return np.sqrt(np.mean((exp-res)**2))
+    
+    def ltwo(self,res,exp,dx):
+        return np.sqrt(np.mean(dx*(res-exp)**2))
         
