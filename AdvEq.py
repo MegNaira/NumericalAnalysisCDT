@@ -18,8 +18,8 @@ def main():
     w=advschemes.whiz()
     
     schemes = {
-        "FTBS" : w.ftbs,
-        "FTCS" : w.ftcs,
+        #"FTBS" : w.ftbs,
+        #"FTCS" : w.ftcs,
         "CTCS" : w.ctcs
         }
     
@@ -100,5 +100,4 @@ def accuracy():
         
     
 main()
-accuracy()
                 
