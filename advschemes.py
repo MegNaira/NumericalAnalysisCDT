@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 class whiz:
     
-    def __init__(self, u=1.0, nx=100, nt=500, s=1.0, x=None, plot=True, squarewave=False):
+    def __init__(self, u=1.0, nx=40, nt=200, s=1.0, x=None, plot=True, squarewave=False):
         #Parameters
         self.u = u
         self.nx = nx
@@ -104,8 +104,8 @@ class whiz:
         scheme='CTCS'
         self.phiOld=self.analytic(self.dt)
         
-        for n in range(2,self.nt):
-            for j in range(1,self.nx):
+        for n in range(1,self.nt):
+            for j in range(1,self.nx-1):
                 self.phi[j] = self.phiOlder[j] - self.c*(self.phiOld[j+1] - self.phiOld[j-1])
             self.phi[0]=self.phiOlder[0]-self.c*(self.phiOld[1]-self.phiOld[-2])   
             self.phi[-1]=self.phi[0] 
