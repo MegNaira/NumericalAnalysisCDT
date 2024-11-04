@@ -11,7 +11,36 @@ import matplotlib.pyplot as plt
 
 class whiz:
     
-    def __init__(self, u=1.0, nx=50, nt=50/0.4, x=None, plot=True, squarewave=False):
+    """
+    This class is used to implement different schemes to solve
+    the same partial differential equation, namely the advection equation.
+    
+    It takes 5 optional arguments:
+        
+        floats:
+        u, the wind speed (default=1.0);
+        
+        int:
+        nx, the number or spatial points used to discretise the wave (default=50);
+        nt, the number of time steps (default=125)
+        
+        bool:
+        plot, activates the timestep plotting function when True (default=True);
+        errors, if True, the schemes give as output the errors at every time step,
+                if False, the output is the numerical solution at the last time step (default=False).
+                
+    It contains 7 callable functions:
+        
+        analytic, computes the analytic solution to the advection equation;
+        plot_timestep, used by the schemes to plot the results at different time steps;
+        ftbs, computes the numerical solution using the forward in time backwards in space finite differences scheme;
+        ftcs, computes the numerical solution using the forward in time centered in space finite differences scheme;
+        ctcs, computes the numerical solution using the centered in time centered in space finite differences scheme;
+        ltwo, computes the L2 norm of the difference between the analytical and the numerical solution.
+    
+    """
+    
+    def __init__(self, u=1.0, nx=50, nt=50/0.4, plot=True, errors=False):
         
         #Parameters
         self.u = u
@@ -25,8 +54,10 @@ class whiz:
         self.c = self.dt*self.u/self.dx
         
         self.x = np.linspace(0.0, 1.0, self.nx+1)
+        self.t = np.zeros(self.nt)
+        self.l2 = np.zeros(self.nt)
         
-        self.sw=squarewave
+        self.err=errors
         
         self.phi=self.analytic(0)
         self.phiOld=self.phi.copy()
@@ -34,12 +65,10 @@ class whiz:
         
         self.figures=plot
         
+        
     #the analytical solution to the advection equation, used for comparison and for setting initial conditions
     def analytic(self,t):
-        if (self.sw):
-            return np.where((self.x-self.u*t)%1. < 0.5, 1, 0.)
-        else:
-            return np.power(np.sin(2*np.pi*(self.x-self.u*t)),2)
+        return np.power(np.sin(2*np.pi*(self.x-self.u*t)),2)
     
     
     #function to plot interesting time steps
@@ -59,12 +88,14 @@ class whiz:
             ax.set_ylabel('$\phi$', fontsize=20)
             ax.set_title(scheme + ', c=%.1f'%(self.c), fontsize=22)
             ax.set_ylim([-0.1,1.1])
-            fig.savefig(scheme + "_step%i_sqwave"%n + str(self.sw) + ".jpg")
+            fig.savefig(scheme + "_step%i"%n + ".jpg")
             plt.show()
             plt.pause(0.05)
     
+    
     #FTBS - computes the numerical solution and calls the plotting function
     def ftbs(self):
+        
         scheme='FTBS'
         
         for n in range(self.nt):
@@ -73,17 +104,24 @@ class whiz:
             self.phi[0]=self.phi[-1] 
             self.phiOld = self.phi.copy()
             
-            #selecting and plotting 10 timesteps
+            #calculating errors to check stability
+            self.t[n]=(n+1)*self.dt
+            self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
+                
+            #selecting and plotting 5 timesteps
             y=self.nt/5
             if n%y==0:
                 self.plot_timestep(n,scheme)
-                
-        t=(n+1)*self.dt       
-        #print("t_ftbs=", t)         
-        return self.phi
+        
+        if (self.err):
+            return self.t, self.l2
+        else:
+            return self.phi
+        
                 
     #FTCS - computes the numerical solution and calls the plotting function
     def ftcs(self):
+        
         scheme='FTCS'
         
         for n in range(self.nt):
@@ -93,15 +131,24 @@ class whiz:
             self.phi[-1]=self.phi[0] 
             self.phiOld = self.phi.copy()
             
-            #selecting and plotting 10 timesteps
-            y=self.nt/10
+            #calculating errors to check stability
+            self.t[n]=(n+1)*self.dt
+            self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
+                
+            #selecting and plotting 5 timesteps
+            y=self.nt/5
             if n%y==0:
                 self.plot_timestep(n,scheme)
-                
-        return self.phi
+        
+        if (self.err):
+            return self.t, self.l2
+        else:
+            return self.phi
+        
     
     #CTCS - computes the numerical solution and calls the plotting function
     def ctcs(self):
+        
         scheme='CTCS'
         self.phiOld=self.analytic(self.dt)
         
@@ -113,19 +160,27 @@ class whiz:
             self.phiOlder = self.phiOld.copy()
             self.phiOld = self.phi.copy()
             
-            #selecting and plotting 10 timesteps
+            #calculating errors to check stability
+            self.t[n]=(n+1)*self.dt
+            self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
+                
+            #selecting and plotting 5 timesteps
             y=self.nt/5
             if n%y==0:
                 self.plot_timestep(n,scheme)
-                
-        t=(n+1)*self.dt       
-        #print("t_ctcs", t)        
-        return self.phi
+        
+        if (self.err):
+            return self.t, self.l2
+        else:
+            return self.phi
     
-    #Root mean square error, used for convergence analysis
-    def rmse(self,res,exp):
-        return np.sqrt(np.mean((exp-res)**2))
+    #Root mean square error
+    #def rmse(self,res,exp):
+        #return np.sqrt(np.mean((exp-res)**2))
     
+    
+    #L2 norm of errors, used for stability and convergence analysis
     def ltwo(self,res,exp,dx):
-        return np.sqrt(np.mean(dx*(res-exp)**2))
+        return np.sqrt(np.sum(dx*(res-exp)**2))/np.sqrt(np.sum(dx*exp**2))
+    
         
