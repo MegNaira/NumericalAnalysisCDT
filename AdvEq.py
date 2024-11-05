@@ -73,7 +73,7 @@ def checks(err=False,stb=False,acc=False):
         ax.plot(t_ctcs, err_ctcs, color='#345995', lw=3, label='CTCS')
         ax.legend(loc = 'upper left', fontsize=20)
         ax.set_xlabel('time', fontsize=20)
-        ax.set_ylabel('$\ell_2$-norm of errors', fontsize=20)
+        ax.set_ylabel('$\ell^22$-norm of errors', fontsize=20)
         ax.text(0.2,0.5,'c=%.1f'%(w1.c), fontsize=18)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
@@ -118,7 +118,7 @@ def checks(err=False,stb=False,acc=False):
         ax.plot(c,l2norm_ctcs, color='#345995', lw=3, label='CTCS')
         ax.legend(loc = 'upper left', fontsize=20)
         ax.set_xlabel('Courant number', fontsize=20)
-        ax.set_ylabel('$\ell_2$-norm of errors', fontsize=20)
+        ax.set_ylabel('$\ell^2$-norm of errors', fontsize=20)
         ax.text(0.1,2.3,'$t=t_{end}$=%.1f'%(w2.nt*w2.dt), fontsize=18)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
@@ -126,9 +126,8 @@ def checks(err=False,stb=False,acc=False):
         ax.tick_params(axis='y', which='major', labelsize=18, width=3, length=7)
         ax.tick_params(axis='y', which='minor', labelsize=0, width=2, length=3)
         
-        
-        fig.savefig("SchemesStability_tend%.1f.jpg"%(w2.dt*w2.nt))
         plt.grid()
+        fig.savefig("SchemesStability_tend%.1f.jpg"%(w2.dt*w2.nt))
         plt.show
         
         
@@ -153,9 +152,6 @@ def checks(err=False,stb=False,acc=False):
             res_ctcs=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).ctcs()
             
             exp=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).analytic(w3.nt*w3.dt)
-        
-            #diff_ftbs[i]=w3.rmse(res_ftbs,exp)
-            #diff_ctcs[i]=w3.rmse(res_ctcs,exp)
             
             diff_ftbs[i]=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).ltwo(res_ftbs,exp,1/nx[i])
             diff_ctcs[i]=advschemes.whiz(nx=nx[i], nt=nt[i], plot=False).ltwo(res_ctcs,exp,1/nx[i])
@@ -180,7 +176,7 @@ def checks(err=False,stb=False,acc=False):
         ax.text(-1.55,-0.95,'n=%.2f'%m_ctcs, color='#345995', fontsize=16, rotation=30)
         ax.text(-1.6,-1.6,'c=%.1f'%(w3.c), fontsize=18)
         ax.set_xlabel('log(dx)', fontsize=20)
-        ax.set_ylabel('log($\ell_2$-norm of errors)', fontsize=20)
+        ax.set_ylabel('log($\ell^2$-norm of errors)', fontsize=20)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
         ax.tick_params(axis='x', which='minor', labelsize=0, width=2, length=5)
