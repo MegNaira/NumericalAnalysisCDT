@@ -12,6 +12,10 @@ import scipy.optimize as opt
 import advschemes
 
 
+#Disclaimer: I call the class extensively when using its functions to avoid the class' "mutability",
+#i.e. changes to it that affect the same memory location, when calling at once multiple functions from it that return the same self object.
+#It's a bug that, unfortunetely, has presented to me, and that I haven't been able to solve in other ways for the moment.
+
 def main():
     
     """"
@@ -19,17 +23,9 @@ def main():
     
     """
 
-    w=advschemes.whiz()
-    
-    schemes = {
-        "FTBS" : w.ftbs,
-        "FTCS" : w.ftcs,
-        "CTCS" : w.ctcs
-        }
-    
-    #calling the schemes
-    for method in schemes:
-        result=schemes[method]()
+    advschemes.whiz().ftbs()
+    advschemes.whiz().ftcs()
+    advschemes.whiz().ctcs()
 
 
 def checks(err=False,stb=False,acc=False):
@@ -61,11 +57,6 @@ def checks(err=False,stb=False,acc=False):
     
     fig, ax = plt.subplots(1,1,figsize=(12,10))
     
-    
-    #Disclaimer: I call the class extensively when using its functions to avoid the class' "mutability",
-    #i.e. changes to it that affect the same memory location, when calling at once multiple functions from it.
-    #It's a bug that, unfortunetely, has presented to me, and that I haven't been able to solve in other ways for the moment.
-    
     if (err):
         
         #initializing the class to calculate errors at every timestep
@@ -82,7 +73,7 @@ def checks(err=False,stb=False,acc=False):
         ax.plot(t_ctcs, err_ctcs, color='#345995', lw=3, label='CTCS')
         ax.legend(loc = 'upper left', fontsize=20)
         ax.set_xlabel('time', fontsize=20)
-        ax.set_ylabel('$L_2$-norm of errors', fontsize=20)
+        ax.set_ylabel('$\ell_2$-norm of errors', fontsize=20)
         ax.text(0.2,0.5,'c=%.1f'%(w1.c), fontsize=18)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
@@ -93,8 +84,7 @@ def checks(err=False,stb=False,acc=False):
         plt.grid()
         
         fig.savefig("ErrorEvolution_c%.1f.jpg"%w1.c)
-        plt.show
-        
+        plt.show        
         
         
     if (stb):
@@ -128,7 +118,7 @@ def checks(err=False,stb=False,acc=False):
         ax.plot(c,l2norm_ctcs, color='#345995', lw=3, label='CTCS')
         ax.legend(loc = 'upper left', fontsize=20)
         ax.set_xlabel('Courant number', fontsize=20)
-        ax.set_ylabel('$L_2$-norm of errors', fontsize=20)
+        ax.set_ylabel('$\ell_2$-norm of errors', fontsize=20)
         ax.text(0.1,2.3,'$t=t_{end}$=%.1f'%(w2.nt*w2.dt), fontsize=18)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
@@ -190,7 +180,7 @@ def checks(err=False,stb=False,acc=False):
         ax.text(-1.55,-0.95,'n=%.2f'%m_ctcs, color='#345995', fontsize=16, rotation=30)
         ax.text(-1.6,-1.6,'c=%.1f'%(w3.c), fontsize=18)
         ax.set_xlabel('log(dx)', fontsize=20)
-        ax.set_ylabel('log($L_2$-norm of errors)', fontsize=20)
+        ax.set_ylabel('log($\ell_2$-norm of errors)', fontsize=20)
         
         ax.tick_params(axis='x', which='major', labelsize=18, width=3, length=7)
         ax.tick_params(axis='x', which='minor', labelsize=0, width=2, length=5)
@@ -203,6 +193,8 @@ def checks(err=False,stb=False,acc=False):
         plt.show()
         
     
-#main()
+main()
+checks(err=True)
+checks(stb=True)
 checks(acc=True)
                 
