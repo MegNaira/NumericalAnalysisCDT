@@ -110,7 +110,7 @@ class whiz:
                 
             #selecting and plotting 3 timesteps
             y=int(self.nt/3)
-            if (n==y) or (n==2*y) or (n==3*y):
+            if (n==y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
@@ -137,7 +137,7 @@ class whiz:
                 
             #selecting and plotting 3 timesteps
             y=int(self.nt/3)
-            if (n==y) or (n==2*y) or (n==3*y):
+            if (n==y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
@@ -166,17 +166,13 @@ class whiz:
                 
             #selecting and plotting 3 timesteps
             y=int(self.nt/3)
-            if (n==y) or (n==2*y) or (n==3*y):
+            if (n==y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
             return self.t, self.l2
         else:
             return self.phi
-    
-    #Root mean square error
-    #def rmse(self,res,exp):
-        #return np.sqrt(np.mean((exp-res)**2))
     
     
     #L2 norm of errors, used for stability and convergence analysis
