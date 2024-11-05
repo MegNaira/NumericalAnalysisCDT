@@ -108,9 +108,9 @@ class whiz:
             self.t[n]=(n+1)*self.dt
             self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
                 
-            #selecting and plotting 5 timesteps
-            y=self.nt/5
-            if n%y==0:
+            #selecting and plotting 3 timesteps
+            y=int(self.nt/3)
+            if (n==y) or (n==2*y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
@@ -135,9 +135,9 @@ class whiz:
             self.t[n]=(n+1)*self.dt
             self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
                 
-            #selecting and plotting 5 timesteps
-            y=self.nt/5
-            if n%y==0:
+            #selecting and plotting 3 timesteps
+            y=int(self.nt/3)
+            if (n==y) or (n==2*y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
@@ -164,9 +164,9 @@ class whiz:
             self.t[n]=(n+1)*self.dt
             self.l2[n]=self.ltwo(self.phi,self.analytic(self.t[n]),self.dx)
                 
-            #selecting and plotting 5 timesteps
-            y=self.nt/5
-            if n%y==0:
+            #selecting and plotting 3 timesteps
+            y=int(self.nt/3)
+            if (n==y) or (n==2*y) or (n==3*y):
                 self.plot_timestep(n,scheme)
         
         if (self.err):
