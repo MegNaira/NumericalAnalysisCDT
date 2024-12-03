@@ -5,6 +5,8 @@ Folder "AssignmentPart1" contains my work for the first part of the assignment, 
 
 Folder "AssignmentPart2" containts the work for the second part, with a code that computes the pollutant spread over Reading from a fire in Southampton, in the static diffusive case (for now).
 
+The rest of the repository contains excercises and extra codes.
+
 ## Author
 Arianna Ferrotti [email here](mailto:a.ferrotti@soton.ac.uk)
 
