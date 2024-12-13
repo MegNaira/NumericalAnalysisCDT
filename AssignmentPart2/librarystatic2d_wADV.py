@@ -4,6 +4,8 @@
 Created on Wed Dec 11 11:59:22 2024
 
 @author: arianna
+
+Arrays dimensions are expressed as NRxNC where NR = number of rows and NC = number of columns
 """
 
 import numpy as np
@@ -15,12 +17,12 @@ def shape(xi):
 
     Parameters
     ----------
-    xi: array of floats 2x1
+    xi: array of floats 1x2
         local coordinates of a point in the reference triangle
 
     Returns
     -------
-    Array of floats 3x1
+    Array of floats 1x3
         Ordered shape function on points of reference triangle.
 
     """
@@ -52,7 +54,7 @@ def x_from_xi(xi, xn):
 
     Parameters
     ----------
-    xi: array of floats 2x1
+    xi: array of floats 1x2
         local coordinates of a point in the reference triangle
     
     xn: array of floats 3x2
@@ -60,7 +62,7 @@ def x_from_xi(xi, xn):
 
     Returns
     -------
-    Array of floats
+    Array of floats 1x2
         Global coordinates of a point in the reference triangle mapped back to the element triangle
 
     """
@@ -82,8 +84,8 @@ def xi_from_x(x, xn):
 
     Returns
     -------
-    Array of floats
-        Global coordinates of a point in the reference triangle mapped back to the element triangle
+    Array of floats 1x2
+        Local coordinates of a point in element triangle mapped back to the reference triangle
 
     """
     A=(x[0]-xn[0,0])/(xn[1,0]-xn[0,0])
@@ -96,17 +98,17 @@ def xi_from_x(x, xn):
 
 def jacobian(xe):
     """
-    
+    Computes the jacobian for the change of coordinates from reference to global
 
     Parameters
     ----------
-    xe: array of floats
-        global coordinates of element nodes
+    xe: array of floats Nx2
+        global coordinates of N element nodes
 
     Returns
     -------
-    J : array of floats
-        2x2 matrix which is the jacobian of the transformation from xi to x
+    array of floats 2x2
+        matrix which is the jacobian of the transformation from xi to x
 
     """
 
@@ -116,12 +118,12 @@ def jacobian(xe):
 
 def det_j(xe):
     """
-    
+    Computes the determinant of the jacobian for the change of coordinates from reference to global
 
     Parameters
     ----------
-    xe: array of floats
-        global coordinates of element nodes
+    xe: array of floats Nx2
+        global coordinates of N element nodes
 
     Returns
     -------
@@ -135,16 +137,17 @@ def det_j(xe):
     
 def inverse_jacobian(xe):
     """
-    
+    Computes the inverse of the jacobian for the change of coordinates from reference to global
+    i.e. the jacobian for the change from global to reference coordinates
 
     Parameters
     ----------
-    xe : array of floats
-        global coordinates of element nodes
+    xe : array of floats Nx2
+        global coordinates of N element nodes
 
     Returns
     -------
-    float
+    array of floats 2x2
         inverse of jacobian
 
     """
@@ -154,16 +157,16 @@ def inverse_jacobian(xe):
 
 def dNdx(xe):
     """
-    
+    Computes the derivatives of the shape function wrt to the global coordinates
 
     Parameters
     ----------
-    xe : array of floats
-        global coordinates of element nodes
+    xe : array of floats Nx2
+        global coordinates of N element nodes
 
     Returns
     -------
-    dNx : Array of floats, Array of floats
+    dNx : Array of floats 3x2
         Ordered derivative of shape functions wrt global x,  y.
         
 
@@ -175,11 +178,11 @@ def dNdx(xe):
 
 def quadrature_over_ref(psi):
     """
-    
+    Computes the gaussian quadrature of the function psi over the reference triangle
 
     Parameters
     ----------
-    psi : array of floats
+    psi : func 1d
         function to integrate over reference triangle
 
     Returns
@@ -204,16 +207,17 @@ def quadrature_over_ref(psi):
     return quad
 
 
-def quadrature_over_e(psi,xe):
+def quadrature_over_e(psi,xn):
     """
+    Computes the gaussian quadrature of the function psi over the element with nodes xn
     
 
     Parameters
     ----------
-    psi : array of floats
+    psi : func 1d
         function to integrate over element
         
-    xe: array of floats
+    xn: array of floats 3x2
         global coordinates of element nodes
 
     Returns
@@ -230,12 +234,26 @@ def quadrature_over_e(psi,xe):
     
     
     for i in range(3):
-        quad+=psi(x_from_xi(xij[i,:],xe))*abs(det_j(xe))/6
+        quad+=psi(x_from_xi(xij[i,:],xn))*abs(det_j(xn))/6
     return quad
 
         
         
 def local_stiff_diff(xe):
+    """
+    Computes the local stiffness matrix for the diffusion dominated equation
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+
+    Returns
+    -------
+    out : array of floats 3x3
+        local stiffness matrix for diffusion
+
+    """
     out=np.zeros((3,3))
     dN_dxi = dNdxi()                                      
     dN_dxdy = dN_dxi @ inverse_jacobian(xe)
@@ -246,6 +264,23 @@ def local_stiff_diff(xe):
     return out
 
 def local_stiff_adv(xe,u):
+    """
+    Computes the local stiffness matrix for the advection dominated equations
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+    
+    u : array of floats 1x2
+        advection velocity in the (x,y) plane
+
+    Returns
+    -------
+    out : array of floats 3x3
+        local stiffness matrix for advection
+
+    """
     out=np.zeros((3,3))
     dN_dxi = dNdxi()                                      
     dN_dxdy = dN_dxi @ inverse_jacobian(xe)
@@ -256,9 +291,46 @@ def local_stiff_adv(xe,u):
     return out
 
 def local_stiffness(xe, u, D):
+    """
+    Sums the advection dominated and diffusion dominated local stiffness matrixes
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+        
+    u : array of floats 1x2
+        advection velocity in the (x,y) plane
+        
+    D : float
+        diffusion coefficient
+
+    Returns
+    -------
+    array of floats 3x3
+        local stiffness matrix for advection+diffusion
+
+    """
     return D*local_stiff_diff(xe)-local_stiff_adv(xe, u)
 
 def local_force(S,xe):
+    """
+    Computes the column force vector
+
+    Parameters
+    ----------
+    S : func
+        source function
+        
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+
+    Returns
+    -------
+    f : array of floats 1x3
+        force vector
+
+    """
     f=np.zeros(3)
 
     for i in range(len(f)):
@@ -267,16 +339,53 @@ def local_force(S,xe):
         
     return f
 
-def closest_node(xe):
-    Rx=np.array([473993, 171625])
+def closest_node(xe,x):
+    """
+    Finds the closest node to the point x in the given grid xe 
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+    
+    x : array of floats 1x2
+        global coordinates of the point of interest
+
+    Returns
+    -------
+    float
+        IEN of the node closest to the point of interest
+
+    """
+    
     distance=np.zeros(len(xe[:,0]))
     for i in range(len(distance)):
-        distance[i]=np.sqrt((xe[i,0]-Rx[0])**2+(xe[i,1]-Rx[1])**2)
+        distance[i]=np.sqrt((xe[i,0]-x[0])**2+(xe[i,1]-x[1])**2)
                                                                                                                                                      
     return np.where(distance == distance.min())
 
-def candidates(xe,IEN):
-    gnn=closest_node(xe)
+def candidates(xe,IEN,x):
+    """
+    Finds the elements that contain the closest node to the point x
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+        
+    IEN : array of floats Nex3
+        IEN of the Ne elements
+        
+    x : array of floats 1x2
+        global coordinates of the point of interest
+
+    Returns
+    -------
+    array of floats 6x3
+        IEN of the 6 elements that contain the closest node to x
+
+    """
+    gnn=closest_node(xe,x)
     numbers=[]
     for e in range(len(IEN[:,0])):
         if (gnn==IEN[e,0]) or (gnn==IEN[e,1]) or (gnn==IEN[e,2]):
@@ -286,32 +395,70 @@ def candidates(xe,IEN):
     
     
 def triangle_finder(xe,IEN,x):
-    cands=candidates(xe,IEN)
+    """
+    Checks on the reference coordinates of the point x to find the element where it sits
+
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+        
+    IEN : array of floats Nex3
+        IEN of the Ne elements
+        
+    x : array of floats 1x2
+        global coordinates of the point of interest
+
+    Returns
+    -------
+    array of floats 3x2
+        global coordinates of the 3 nodes in the element that contains x
+        
+    array of floats 1x3
+        IEN of the 3 nodes in the element that contains x
+        
+    Pxi : array of floats 1x2
+        reference coordinates of the point x
+
+    """
+    cands=candidates(xe,IEN,x)
     
     for e in range(len(cands[:,0])):
-        Rxi=xi_from_x(x, xe[cands[e,:],:])
-        if (Rxi[0]>=0) and (Rxi[1]>=0) and ((Rxi[0]+Rxi[1])<=1):
-            #print("Triangle found! It's candidate number",e+1)
+        Pxi=xi_from_x(x, xe[cands[e,:],:])
+        if (Pxi[0]>=0) and (Pxi[1]>=0) and ((Pxi[0]+Pxi[1])<=1):
             break
         
-    return xe[cands[e,:],:], cands[e,:], Rxi
+    return xe[cands[e,:],:], cands[e,:], Pxi
   
-def psi_r(xe,IEN,psi):
-    Rx=np.array([473993, 171625])
-    tri_coords, tri_num, Rxi = triangle_finder(xe,IEN,Rx)
-    psi_tri=psi[tri_num]
-    
-    N=shape(Rxi)
-    psi_R=N[0]*psi_tri[0]+N[1]*psi_tri[1]+N[2]*psi_tri[2]
-    
-    return psi_R
+def psi_p(xe,IEN,psi,x):
+    """
+    Evaluates the value of psi in Reading (global coords given by Rx) using shape functions
 
-def psi_s(xe,IEN,psi):
-    Sx=np.array([442365, 115483])
-    tri_coords, tri_num, Sxi = triangle_finder(xe,IEN,Sx)
+    Parameters
+    ----------
+    xe : array of floats Nx2
+        global coordinates of N element nodes
+        
+    IEN : array of floats Nex3
+        IEN of the Ne elements
+        
+    psi : func 1d
+        function to integrate over element
+    
+    x : array of floats 1x2
+        global coordinates of the point of interest P
+
+    Returns
+    -------
+    psi_P : float
+        value of psi in point P
+
+    """
+    #Rx=np.array([473993, 171625])
+    tri_coords, tri_num, Pxi = triangle_finder(xe,IEN,x)
     psi_tri=psi[tri_num]
     
-    N=shape(Sxi)
-    psi_S=N[0]*psi_tri[0]+N[1]*psi_tri[1]+N[2]*psi_tri[2]
+    N=shape(Pxi)
+    psi_P=N[0]*psi_tri[0]+N[1]*psi_tri[1]+N[2]*psi_tri[2]
     
-    return psi_S
+    return psi_P
