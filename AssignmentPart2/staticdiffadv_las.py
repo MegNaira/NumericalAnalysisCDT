@@ -30,41 +30,59 @@ Ls = {
     '40' : 40
     }
 
+BCs = {
+       'whole' : True,
+       'South': False
+       }
 
-#initialiazing gaussian source
+
+#initialiazing gaussian fire source
 def source(X):
     """
-    Computes the value of a 2D Gaussian function at given points, centered at the Mountbatten Building.
+    Computes the value of a 2D Gaussian function at given points, centered at the Mountbatten Building,
+    or returns the identity if the gauss flag is deactivated.
 
-    Parameters:
-    - X: array-like 2x1, coordinates.
+    Parameters
+    ----------
+    X : array of floats 1x2
+        global coordinates
+
+    Returns
+    -------
+    Gaussian values at the specified (x, y) coordinates.
     
-
-    Returns:
-    - Gaussian values at the specified (x, y) coordinates.
     """
     x0=442365.
     y0=115483.
     sigma_x=500.
     sigma_y=500.
     amplitude=1.
+
     return amplitude * np.exp(-(((X[0] - x0)**2) / (2 * sigma_x**2) + ((X[1] - y0)**2) / (2 * sigma_y**2)))
 
+
 #solver that uses functions defined in the imported lib
-def staticdiffadvsolver(resolution,D,v,plot=True):
+def staticdiffadvsolver(v, D, res, BC, plot=True):
     """
     Solves the static advection diffusion equation
 
     Parameters
     ----------
-    resolution : string from ['1_25','2_5','5','10','20','40']
-        typical lengthscale (in km) of the grid considered.
-    
+    v : string
+        either 'R' (Reading) or 'N' (North) depending on the wind direction
+        
     D : float
         diffusion coefficient, should be of the order of 10**5 |u|, for the resolutions considered
         
-    v : string
-        either 'R' (Reading) or 'N' (North) depending on the wind direction
+    source : func 1d
+            function to use as fire source function. Here either source_gauss or source_id.
+        
+    res : string from ['1_25','2_5','5','10','20','40']
+        typical lengthscale (in km) of the grid considered.
+        
+    BC : boolean
+        If True, sets homogeneous Dirichlet BCs on all boundary nodes.
+        If False, only on boundary nodes whose y<ysoton.
         
     plot : boolean, optional
         parameter that activates the map plot if True. The default is True.
@@ -77,23 +95,27 @@ def staticdiffadvsolver(resolution,D,v,plot=True):
         pollutant concentration in Reading normalized to 1 over Southampton
 
     """
-
-    nodes = np.loadtxt('las_grids/las_nodes_%sk.txt'%resolution)
-    IEN = np.loadtxt('las_grids/las_ien_%sk.txt'%resolution, dtype=np.int64)
-    #IEN = IEN[:,-1::-1]
-    boundary_nodes = np.loadtxt('las_grids/las_bdry_%sk.txt'%resolution, dtype=np.int64)
     
-    #setting homogeneous Dirichlet BCs on boundary nodes whose y<y_soton
-    lower_bdry=[0]
-    for i in boundary_nodes[1:]:
-        if (nodes[i,1]<110000) and ((nodes[i,1]-115483)<=50):
-            lower_bdry = np.append(lower_bdry,boundary_nodes[i])
+    nodes = np.loadtxt('las_grids/las_nodes_%sk.txt'%res)
+    IEN = np.loadtxt('las_grids/las_ien_%sk.txt'%res, dtype=np.int64)
+    #IEN = IEN[:,-1::-1]
+    boundary_nodes = np.loadtxt('las_grids/las_bdry_%sk.txt'%res, dtype=np.int64)
+    
+    #setting homogeneous Dirichlet BCs on boundary nodes
+    bkey=[key for key, value in BCs.items() if value == BC][0]
+    if (BC):
+        bdry=boundary_nodes
+    else:
+        bdry=[0]
+        for i in boundary_nodes[1:]:
+            if (nodes[i,1]<110000) and ((nodes[i,1]-115483)<=50): #y<ysoton
+                bdry = np.append(bdry,boundary_nodes[i])
         
     ID = np.zeros(len(nodes), dtype=np.int64)
         
     n_eq = 0
     for i in range(len(nodes[:, 1])):
-        if i in lower_bdry:
+        if i in bdry:
             ID[i] = -1
         else:
             ID[i] = n_eq
@@ -102,7 +124,6 @@ def staticdiffadvsolver(resolution,D,v,plot=True):
     N_equations = np.max(ID)+1
     N_elements = IEN.shape[0]
     N_nodes = nodes.shape[0]
-    N_dim = nodes.shape[1]
     # Location matrix
     LM = np.zeros_like(IEN.T)
     for e in range(N_elements):
@@ -146,61 +167,71 @@ def staticdiffadvsolver(resolution,D,v,plot=True):
         plt.tripcolor(nodes[:,0], nodes[:,1], Psi_A, triangles=IEN)
         
         plt.scatter([473993],[171625], s=2, c='red')
-        #plt.scatter([442365,473993],[115483,171625], s=2, c='red')
-        plt.scatter(nodes[lower_bdry,0],nodes[lower_bdry,1], s=2, c='black')
-        #plt.scatter(nodes[:,0],nodes[:,1], s=1)
+        plt.scatter(nodes[bdry,0],nodes[bdry,1], s=2, c='black')
         
         plt.xlabel(r"longitude", fontsize=12)
         plt.ylabel(r"latitude", fontsize=12)
         plt.title('Static advection diffusion with u = 10 m/s %s and D=%.0e'%(v,D), fontsize=8)
-        plt.text(330000,250000,'L = %.2f km'%Ls[resolution], fontsize=6)
+        plt.text(330000,250000,'L = %.2f km'%Ls[res], fontsize=6)
         plt.text(460000,175000,'$\psi$ = %.3f'%Psi_R_norm, fontsize=6, c='red')
         
         plt.tick_params(labelleft=False, labelbottom=False)
         plt.colorbar()
         
-        plt.savefig('StatAdvDiff_uto%s_%s.pdf'%(v,resolution), format="pdf", bbox_inches="tight")
+        plt.savefig('StatAdvDiff_uto%s_B%s_%s.pdf'%(v,bkey,res), format="pdf", bbox_inches="tight")
         plt.show()
+        
+        print("The pollutant concentration over Reading, normalized to one over Southampton, is %.3f. \n"%Psi_R_norm)
     
     return N_equations, Psi_R_norm
 
 ##%% 
-def accuracy(bestres, v, maxDOF, bestPsi):
+def accuracy(v, D, mapres, BC):
     """
+    Gives result and colormap for a desired resolution (mapres),
     Shows the convergence of the solver from a fit analysis and from a theoretical computation of slope and error.
     
 
     Parameters
-    ----------
-    bestres : string
-        resolution taken as best comparison to true solution
-        
+    ----------    
     v : string
         either 'R' (Reading) or 'N' (North) depending on the wind direction
-    
-    maxDOF : float
-        Degrees of freedom from the best resolution available
-    bestPsi : float
-        Solution from the solver for the best resolution available
+        
+    D : float
+        diffusion coefficient, should be of the order of 10**5 |u|, for the resolutions considered
+        
+    mapres : string from ['1_25','2_5','5','10','20','40']
+        resolution considered for the colormap plot
+        
+    BC : boolean
+        If True, sets homogeneous Dirichlet BCs on all boundary nodes.
+        If False, only on boundary nodes whose y<ysoton.
 
     Returns
     -------
-    None.
+    None
 
     """
     
-    #storing the max resolution solution
-    Psi_R = [bestPsi]
-    DOF = [maxDOF]
+    #keyword for boundary conditions
+    bkey=[key for key, value in BCs.items() if value == BC][0]
+    
+    #initializing storage for solutions
+    Psi_R = []
+    DOF = []
 
     for l in Ls:
         
-        if l != bestres:
+        if l == mapres:
         
-            dof, Psi = staticdiffadvsolver(l, D, v, plot=False)
+            dof, Psi = staticdiffadvsolver(v, D, l, BC)
+            
+        else:
+            
+            dof, Psi = staticdiffadvsolver(v, D, l, BC, plot=False)
         
-            Psi_R.append(Psi)
-            DOF.append(dof)
+        Psi_R.append(Psi)
+        DOF.append(dof)
     
     #taking, in order, worst resolutions, mid resolutions, and best resolutions    
     y_4N=np.array([Psi_R[3],Psi_R[1],Psi_R[0]])
@@ -213,11 +244,15 @@ def accuracy(bestres, v, maxDOF, bestPsi):
     for k in range(len(y_4N)):
         s[k]=np.log2(abs((y_2N[k]-y_N[k])/(y_4N[k]-y_2N[k])))
         error[k]=abs(y_2N[k]-y_N[k])/(1-2**(-s[k]))
-        
-    print('s =' ,s, 'from best 3 to worst 3 resolutions')
-    print('mean s =', np.mean(s))
-    print('error =', error, 'from best 3 to worst 3 resolutions')
-    print('mean error =', np.mean(error))
+    
+    np.set_printoptions(precision=2)
+    print("\nTheoretical convergence slopes:")    
+    print('s = ',s,' from best 3 to worst 3 resolutions')
+    print('mean s = %.2f'%np.mean(s))
+    print("\nTheoretical computed errors:")
+    print('error = ',error,' from best 3 to worst 3 resolutions')
+    print('mean error = %.2f'%np.mean(error))
+    print('\n')
     
     #setting up array for relative errors
     err_wrt_best=np.zeros(6)
@@ -231,28 +266,29 @@ def accuracy(bestres, v, maxDOF, bestPsi):
     trendline = lambda coeff,x: np.poly1d(coeff)(x)
     
     plt.figure()
-    plt.loglog(DOF, err_wrt_best, 'xk')
+    plt.loglog(DOF[1:4], err_wrt_best[1:4], 'xk')
+    plt.loglog(DOF[4:], err_wrt_best[4:], 'xb')
     plt.loglog(DOF, np.exp(trendline(polyfit_coeffs,np.log(DOF))),'-r', label=rf'$\propto N^{{{polyfit_coeffs[0]:.2f}}}$')
     plt.xlabel('Degrees of freedom')
     plt.ylabel('Error relative to best solution')
     plt.legend()
     plt.grid()
-    plt.title('Relative error for u=10 m/s %s, D=%.0e, static'%(v,D))
-    plt.savefig('ConvergenceStatAdvDiff_uto%s.pdf'%v, format="pdf", bbox_inches="tight")
+    plt.title('Relative error for u=10 m/s %s, D=%.0e, static, bdry=%s'%(v,D,bkey))
+    plt.savefig('ConvergenceStatAdvDiff_uto%s_B%s.pdf'%(v,bkey), format="pdf", bbox_inches="tight")
     
-    plt.show()   
+    plt.show()
 
-#using the defined functions to get to results for different directions of the velocity
+
+#using the defined functions to get to results for different directions of the velocity and different BCs
+mapres= '1_25'
+print("The grid considered for this computation has typical lengthscale of %.2f km.\n"%Ls[mapres])
 for v in u_dir:
     
-    bestres= '1_25'
+    print("The wind is 10 m/s %s, the diffusion coefficient is %.0e and the source is Gaussian."%(v,D))
     
-    DOFbest, Psibest = staticdiffadvsolver(bestres, D, v)
-    
-    #results
-    print("The grid considered for this computation has typical lengthscale of %.2f km."%Ls[bestres])
-    print("The wind is 10 m/s %s and the diffusion coefficient is %.0e."%(v,D))
-    print("The pollutant concentration over Reading, normalized to one over Southampton, is %.3f."%Psibest)
-    
-    #accuracy analysis
-    accuracy(bestres, v, DOFbest, Psibest)       
+    for b in BCs:
+        print("Homogeneous Dirichlet BCs are now set on the %s boundary."%b)
+        
+        #analysis
+        accuracy(v, D, mapres, BC=BCs[b])
+        
