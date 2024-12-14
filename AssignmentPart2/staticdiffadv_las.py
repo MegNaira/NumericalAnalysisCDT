@@ -72,7 +72,7 @@ def staticdiffadvsolver(v, D, res, BC, plot=True):
         either 'R' (Reading) or 'N' (North) depending on the wind direction
         
     D : float
-        diffusion coefficient, should be of the order of 10**5 |u|, for the resolutions considered
+        diffusion coefficient, should be of the order of 10**4 |u|, for the resolutions considered
         
     source : func 1d
             function to use as fire source function. Here either source_gauss or source_id.
@@ -108,7 +108,7 @@ def staticdiffadvsolver(v, D, res, BC, plot=True):
     else:
         bdry=[0]
         for i in boundary_nodes[1:]:
-            if (nodes[i,1]<110000) and ((nodes[i,1]-115483)<=50): #y<ysoton
+            if (nodes[i,1]<110000) and ((nodes[i,1]-115483)<=500): #y<ysoton
                 bdry = np.append(bdry,boundary_nodes[i])
         
     ID = np.zeros(len(nodes), dtype=np.int64)
@@ -198,7 +198,7 @@ def accuracy(v, D, mapres, BC):
         either 'R' (Reading) or 'N' (North) depending on the wind direction
         
     D : float
-        diffusion coefficient, should be of the order of 10**5 |u|, for the resolutions considered
+        diffusion coefficient, should be of the order of 10**4 |u|, for the resolutions considered
         
     mapres : string from ['1_25','2_5','5','10','20','40']
         resolution considered for the colormap plot
