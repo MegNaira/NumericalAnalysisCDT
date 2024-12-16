@@ -247,10 +247,10 @@ def accuracy(v, D, mapres, BC):
     
     np.set_printoptions(precision=2)
     print("\nTheoretical convergence slopes:")    
-    print('s = ',s,' from best 3 to worst 3 resolutions')
+    print('s = ',s,' from worst 3 to best 3 resolutions')
     print('mean s = %.2f'%np.mean(s))
     print("\nTheoretical computed errors:")
-    print('error = ',error,' from best 3 to worst 3 resolutions')
+    print('error = ',error,' from worst 3 to best 3 resolutions')
     print('mean error = %.2f'%np.mean(error))
     print('\n')
     
